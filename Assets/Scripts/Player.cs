@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.XR;
 
 public class Player : MonoBehaviour
 {
@@ -10,7 +12,10 @@ public class Player : MonoBehaviour
     int init_health;
     public Vector3 start_pos;
 
-    Boolean reset_pos_lock;
+    Vector3 direction = Vector3.zero;
+    float gravity = -9.8f;
+
+    // Boolean reset_pos_lock;
 
     void Start()
     {
@@ -18,7 +23,7 @@ public class Player : MonoBehaviour
         cc = GetComponent<CharacterController>();
 
         // Arbitrary move speed.
-        move_speed = 200f;
+        move_speed = 20f;
 
         // Arbitrary rotation speed.
         rotation_speed = 0.6f;
@@ -27,12 +32,14 @@ public class Player : MonoBehaviour
         init_health = 5;
         health = init_health;
 
-        reset_pos_lock = false;
+        // reset_pos_lock = false;
     }
 
     
     void Update()
     {
+        //reset_pos_lock = true;
+
         // ROTATION TRANSFORMATION
         // For now, rotation will be based on K and L buttons instead of the mouse.
         if (Input.GetKey(KeyCode.K))
@@ -44,6 +51,8 @@ public class Player : MonoBehaviour
             transform.Rotate(new Vector3(0, 1, 0), rotation_speed);
         }
 
+
+        
         // POSITION TRANSFORMATION
         Vector3 move_vector = new Vector3(0, 0, 0); //new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
         if (Input.GetKey(KeyCode.W))
@@ -62,18 +71,35 @@ public class Player : MonoBehaviour
         {
             move_vector += new Vector3(1, 0, 0);
         }
-
-        cc.SimpleMove(transform.rotation * move_vector * move_speed * Time.deltaTime);
         
+        
+        cc.Move(transform.rotation * move_vector * move_speed * Time.deltaTime);
 
+        //direction = transform.TransformDirection(new Vector3(Input.GetAxis("Horizontal") * move_speed, gravity, Input.GetAxis("Vertical") * move_speed));
+        //if (!reset_pos_lock) cc.Move(transform.rotation * direction * Time.deltaTime);
+
+        // reset_pos_lock = false;
+
+        //if (reset_pos_lock)
+        //{
+        //   transform.position = start_pos; // this does not
+        //    transform.rotation = Quaternion.identity;  // this works
+        //    reset_pos_lock = false;
+        //}
+
+    }
+
+    /*
+    void LateUpdate()
+    {
         if (reset_pos_lock)
         {
-            transform.position = start_pos; // this does not
-            transform.rotation = Quaternion.identity;  // this works
+            transform.position = start_pos;
             reset_pos_lock = false;
+            // Debug.Log("transform.pos: " + transform.position);
         }
-        
     }
+    */
 
     public void TakeDamage(int damage)
     {
@@ -87,7 +113,13 @@ public class Player : MonoBehaviour
 
     public void ResetPosition()
     {
-        reset_pos_lock = true;
+        // while (reset_pos_lock) ;
+        //reset_pos_lock = true;
+
+        transform.position = start_pos;
+        // Debug.Log("Inside reset position in player");
+
+        
     }
 
     public void ResetPlayer()

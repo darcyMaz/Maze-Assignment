@@ -17,8 +17,9 @@ public class GameManager : MonoBehaviour
     public Key key1;
     public Key key2;
     public Key key3;
-    public Endzone endzone;
     Collection<Key> keys;
+    public Endzone endzone;
+    public Door finalDoor;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -34,9 +35,10 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Check if keys are collected or not.
-        // If endzone does not know that keys are collected, then we want to call this. 
-        //      Prevents a call every frame of this function after keys are collected. Only want the call once.
+
+        // Check if keys are collected or not and tell the endzone, so it knows the game could end.
+        // Fourth term is so that this statement is not constantly true when the keys are all collected which would constantly call this function.
+        //      This statement will only be true once, when the keys are finally all collected.
         if (key1.IsCollected() && key2.IsCollected() && key3.IsCollected() && !endzone.AreKeysCollected())
         {
             endzone.AllKeysCollected();
@@ -52,7 +54,7 @@ public class GameManager : MonoBehaviour
         else if ( player.GetHealth() <= 0 )
         {
             Debug.Log("The player's health has reached zero, that means you died :(");
-            Debug.Log("The game will not be reset from the start.");
+            Debug.Log("The game will now be reset from the start.");
             ResetGame();
         }
     }
