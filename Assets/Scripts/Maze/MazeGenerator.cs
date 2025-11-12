@@ -13,25 +13,27 @@ public class MazeGenerator : MonoBehaviour
     int[][] vertical_walls;
     int[][] horizontal_walls;
 
-    public int mazeSize;
+    private int MazeSize;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public MazeGenerator()
+    public MazeGenerator(int mazeSize)
     {
+        MazeSize = mazeSize;
+
         // For maze generation.
         // Accepts int arrays where they are size 2 and represent coordinates in the maze.
         mazeGenStack = new Stack<int[]>();
 
         // Maze grid, allows us to generate a maze and know which spots are visited and which aren't in the algorithm.
-        mazeGrid_Visited = new int[mazeSize][];
+        mazeGrid_Visited = new int[MazeSize][];
 
         // Wall grid. There are 2n (n+1) walls (see https://sunshine2k.blogspot.com/2014/04/while-implementing-algorithm-for-hobby.html)
         //   n+1 rows of vertical walls
         //   n+1 collumns of horizontal walls
         //   Each row and column has n walls
         // Zero represents the existance of a wall, 1 no wall.
-        vertical_walls = new int[mazeSize][];
-        horizontal_walls = new int[mazeSize][];
+        vertical_walls = new int[MazeSize][];
+        horizontal_walls = new int[MazeSize][];
 
         // Imagine it like this:
         /*
@@ -61,13 +63,13 @@ public class MazeGenerator : MonoBehaviour
          
          */
 
-        ResetMaze();
+        ClearMaze();
     }
 
-    public int[][][] getNewMaze()
+    public int[][][] GetMaze()
     {
         // Reset the maze generation fields. The stack is empty, the isVisitedGrid is all zeros, the walls are all set to zero.
-        ResetMaze();
+        ClearMaze();
         // Use the generation algorithm to make a maze.
         GenerateMaze();
         // Return the maze in the form of an array holding the wall specifications.
@@ -78,15 +80,15 @@ public class MazeGenerator : MonoBehaviour
     }
 
 
-    private void GenerateMaze()
+    public void GenerateMaze()
     {
         System.Random random = new System.Random();
 
         // Random maze generator, iterative depth first search, see Wikipedia article "Maze Generation Algorithm" section "Iterative implementation (with stack)."
 
         // Initialize starting position.
-        int start_x = random.Next(mazeSize);
-        int start_y = random.Next(mazeSize);
+        int start_x = random.Next(MazeSize);
+        int start_y = random.Next(MazeSize);
 
         // Mark it as visited and push it to the stack.
         mazeGrid_Visited[start_x][start_y] = 1;
@@ -134,7 +136,7 @@ public class MazeGenerator : MonoBehaviour
         // Four possible neighbors, must check if they are inbounds and visited. If so, add them to the arraylist.
 
         // If this neighbor is inbounds.
-        if (x < mazeSize-1)
+        if (x < MazeSize - 1)
         {
             int[] toAdd_0 = { x + 1, y };
 
@@ -148,7 +150,7 @@ public class MazeGenerator : MonoBehaviour
             if (!checkVisit) possibleNeighbors.Add(toAdd_1);
             else if (mazeGrid_Visited[toAdd_1[0]][toAdd_1[1]] == 0) possibleNeighbors.Add(toAdd_1);
         }
-        if (y < mazeSize-1)
+        if (y < MazeSize -1)
         {
             int[] toAdd_2 = { x, y + 1};
             if (!checkVisit) possibleNeighbors.Add(toAdd_2);
@@ -172,8 +174,8 @@ public class MazeGenerator : MonoBehaviour
         }
         
         // Are they valid cells? Check if all four numbers are above -1 and below the mazeSize
-        if (cell1[0] < 0 || cell1[1] < 0 || cell1[0] > mazeSize || cell1[1] > mazeSize ||
-            cell2[0] < 0 || cell2[1] < 0 || cell2[0] > mazeSize || cell2[1] > mazeSize)
+        if (cell1[0] < 0 || cell1[1] < 0 || cell1[0] > MazeSize || cell1[1] > MazeSize ||
+            cell2[0] < 0 || cell2[1] < 0 || cell2[0] > MazeSize || cell2[1] > MazeSize)
                 throw new Exception("GenerateMaze_p.RemoveWall() was called but one of the cells is not valid.") ;
         
         // Are they the same cell?
@@ -206,57 +208,51 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    private void ResetMaze()
+    private void ClearMaze()
     {
         // For each row in the maze, insert a column of size mazeSize.
-        for (int i = 0; i < mazeSize; i++)
+        for (int i = 0; i < MazeSize; i++)
         {
-            mazeGrid_Visited[i] = new int[mazeSize];
+            mazeGrid_Visited[i] = new int[MazeSize];
         }
 
         // Return all the walls to the maze.
         // 0 represents a wall and 1 represents no wall.
-        for (int i=0; i < mazeSize; i++)
+        for (int i=0; i < MazeSize; i++)
         {
-            vertical_walls[i] = new int[mazeSize + 1];
-            horizontal_walls[i] = new int[mazeSize + 1];
+            vertical_walls[i] = new int[MazeSize + 1];
+            horizontal_walls[i] = new int[MazeSize + 1];
         }
 
         // Empty the stack.
         mazeGenStack.Clear();
 
     }
-
-    private string MazeToString()
+    
+    public override string ToString()
     {
-        string toReturn = "Maze of size: " + mazeSize + "\n";
-        for (int i = 0; i < mazeSize; i++)
+        string toReturn = "Maze of size: " + MazeSize + "\n";
+        for (int i = 0; i < MazeSize; i++)
         {
             // print the horizontal walls in weird order
-            for (int v = 0; v < mazeSize; v++)
+            for (int v = 0; v < MazeSize; v++)
             {
-                // toReturn += horizontal_walls[v][i];
                 if (horizontal_walls[v][i] == 1) toReturn += "  ";
                 else toReturn += " -";
-
             }
             toReturn += "\n";
 
-            for (int h= 0; h<mazeSize + 1;h++)
+            for (int h= 0; h<MazeSize + 1;h++)
             {
-                // toReturn += vertical_walls[i][h];
-
                 if (vertical_walls[i][h] == 1) toReturn += "  ";
                 else toReturn += "| ";
             }
             toReturn += "\n";
             
         }
-        for (int v= 0; v < mazeSize;v++)
+        for (int v= 0; v < MazeSize;v++)
         {
-            // toReturn += horizontal_walls[v][mazeSize];
-
-            if (horizontal_walls[v][mazeSize] == 1) toReturn += "  ";
+            if (horizontal_walls[v][MazeSize] == 1) toReturn += "  ";
             else toReturn += " -";
         }
         toReturn += "\n";
