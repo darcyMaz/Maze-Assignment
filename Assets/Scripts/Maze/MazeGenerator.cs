@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GenerateMaze : MonoBehaviour
+public class MazeGenerator : MonoBehaviour
 {
     // Visited parts of the maze search. 0 is not visited and 1 is visited.
     int[][] mazeGrid_Visited;
@@ -16,19 +16,14 @@ public class GenerateMaze : MonoBehaviour
     public int mazeSize;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public MazeGenerator()
     {
-        // For maze generation. Accepts int arrays where they are size 2 and represent coordinates in the maze.
+        // For maze generation.
+        // Accepts int arrays where they are size 2 and represent coordinates in the maze.
         mazeGenStack = new Stack<int[]>();
 
-        // Maze grid, allows us to generate a maze and know which spots are visited and which aren't.
+        // Maze grid, allows us to generate a maze and know which spots are visited and which aren't in the algorithm.
         mazeGrid_Visited = new int[mazeSize][];
-        // For each row in the maze, insert a column of size mazeSize.
-        for ( int i = 0; i < mazeSize; i++ )
-        {
-            mazeGrid_Visited[i] = new int[mazeSize];
-        }
-        
 
         // Wall grid. There are 2n (n+1) walls (see https://sunshine2k.blogspot.com/2014/04/while-implementing-algorithm-for-hobby.html)
         //   n+1 rows of vertical walls
@@ -37,19 +32,53 @@ public class GenerateMaze : MonoBehaviour
         // Zero represents the existance of a wall, 1 no wall.
         vertical_walls = new int[mazeSize][];
         horizontal_walls = new int[mazeSize][];
-        for (int i = 0; i < mazeSize; i++)
-        {
-            vertical_walls[i] = new int[mazeSize + 1];
-            horizontal_walls[i] = new int [mazeSize + 1];
-        }
-        ResetMaze();
 
-        GenerateAMaze();
-        Debug.Log( MazeToString() );
+        // Imagine it like this:
+        /*
+            Each vertical row of walls is one array.
+            Each column of walls is an array.
+            
+            Say this is a grid which will soon be turned into a maze.
+             _ _ _ _
+            | | | | |
+             - - - -
+            | | | | |
+             - - - -
+            | | | | |
+             - - - -
+            | | | | |
+             - - - -
+            The following is one vertical column of walls.
+             -
+             -
+             -
+             -
+             -
+            This, along with the three other vertical wall columns, each have an array representing them.
+            Same with rows.
+            | | | | |
+            This row of walls is represented by an array inside of horizontal walls.
+         
+         */
+
+        ResetMaze();
+    }
+
+    public int[][][] getNewMaze()
+    {
+        // Reset the maze generation fields. The stack is empty, the isVisitedGrid is all zeros, the walls are all set to zero.
+        ResetMaze();
+        // Use the generation algorithm to make a maze.
+        GenerateMaze();
+        // Return the maze in the form of an array holding the wall specifications.
+        int[][][] toReturn = new int[2][][];
+        toReturn[0] = vertical_walls;
+        toReturn[1] = horizontal_walls;
+        return toReturn;
     }
 
 
-    public void GenerateAMaze()
+    private void GenerateMaze()
     {
         System.Random random = new System.Random();
 
@@ -68,7 +97,6 @@ public class GenerateMaze : MonoBehaviour
         {
             // Pop a cell and make it the current cell.
             int[] currentCell = mazeGenStack.Pop();
-            // Debug.Log("currentCell: " + currentCell[0] + ":" + currentCell[1]);
 
             // If it has any neighbors that have not been visited.
             ArrayList neighbors = GetNeighbors(currentCell, true);
@@ -90,11 +118,6 @@ public class GenerateMaze : MonoBehaviour
                 mazeGrid_Visited[neighborCell[0]][neighborCell[1]] = 1;
                 mazeGenStack.Push(neighborCell);
 
-                //Debug.Log("neighborCell: " + neighborCell[0] + ":" + neighborCell[1] + "neighbors.count: " + neighbors.Count);
-                //foreach (int[] item in neighbors)
-                //{
-                //    Debug.Log("neighbor: " + item[0] + " : " + item[1]);
-                //}
             }  
         }
     }
@@ -114,7 +137,8 @@ public class GenerateMaze : MonoBehaviour
         if (x < mazeSize-1)
         {
             int[] toAdd_0 = { x + 1, y };
-            // If this neioghbor has not been visited.
+
+            // If this neighbor has not been visited (skip this check according to the boolean).
             if (!checkVisit) possibleNeighbors.Add(toAdd_0);
             else if (mazeGrid_Visited[toAdd_0[0]][toAdd_0[1]] == 0) possibleNeighbors.Add(toAdd_0);
         }
@@ -184,25 +208,22 @@ public class GenerateMaze : MonoBehaviour
 
     private void ResetMaze()
     {
-
-        // Use this function to set the visited arrays to 0 where that means no spots have been visited.
-        for (int i=0; i<mazeSize; i++)
+        // For each row in the maze, insert a column of size mazeSize.
+        for (int i = 0; i < mazeSize; i++)
         {
-            for (int j = 0; j < mazeSize; j++)
-            {
-                mazeGrid_Visited[i][j] = 0;
-            }
+            mazeGrid_Visited[i] = new int[mazeSize];
         }
 
         // Return all the walls to the maze.
         // 0 represents a wall and 1 represents no wall.
         for (int i=0; i < mazeSize; i++)
         {
-            // Debug.Log("Inside resetmaze: " + i);
-
             vertical_walls[i] = new int[mazeSize + 1];
             horizontal_walls[i] = new int[mazeSize + 1];
         }
+
+        // Empty the stack.
+        mazeGenStack.Clear();
 
     }
 
