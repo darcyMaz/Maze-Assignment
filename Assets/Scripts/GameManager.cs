@@ -4,24 +4,29 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    // GM connects to everyone
-    // List of keys
-    // List of animations
-    // Player's values (health, original position)
-
 
     // Objects that GM connects to.
     public GameObject player_go;
     Player player;
     CharacterController player_cc;
+    
+    // Keys to collect
     public Key key1;
     public Key key2;
     public Key key3;
     Collection<Key> keys;
+    
+    // EndZone which ends the game.
     public Endzone endzone;
+    
+    // Animations
     public Door finalDoor;
+    public EndGate eg1;
+    public EndGate eg2;
+    public EndGate eg3;
+    Collection<EndGate> endgates;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
     void Start()
     {
         player = player_go.GetComponent<Player>();
@@ -78,6 +83,7 @@ public class GameManager : MonoBehaviour
         foreach (Key key in keys) key.ResetKey();
         player.ResetPlayer();
         finalDoor.CloseDoor();
+        foreach (EndGate eg in endgates) eg.CloseAnimation();
     }
 
 }
