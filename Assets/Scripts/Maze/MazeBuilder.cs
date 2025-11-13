@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
@@ -7,21 +8,31 @@ using UnityEngine.InputSystem;
 
 // Note: I don't need to do this especially with the way the tiles are but I can make it so when a tile is recorded, then it removes the walls that were recorded so that the next tile does not double up the walls.
 
+// Next steps
+//      Bring this into main scene
+//      Make main scene
+//      Give GameManager control of three mazes, each with a unique number and sizes.
+//      Randomly choose a starting point as well.
+//      Press to open doors for maze access. Then they teleport you over.
+// Future steps
+//      Timer, slowly lose health
+//      Randomly spawn in pits
+//      Oh shit there was the idea to make certain areas inaccessible.
+//          Not doing that because of random nature of maze.
+
+
+
 public class MazeBuilder : MonoBehaviour
 {
     // This class is for actually building the maze.
-
-    // Accept the wall specifications from MazeGenerator. X
-    // Translate those specs from wall arrays to a dictionary where coords corresponds to an integer representing the tile type. 
-    // Generate in unity the tile based on the tile type in the dictionary and place it at its coordinates.
-    // And create spacing for the size of the tile. X
-
+    public int MazeNumber;
     public int MazeSize;
     public float TileSize;
     private MazeGenerator MazeGenerator;
 
-    // Where the CoordsToBinary object returns a string which is a 4bit binary, translate that to decimal and use that to search this array for the GameObject tile of which their are exactly 16.
+    // Where the CoordsToBinary object returns a string which is a 4bit binary, translate that to decimal and use that as an index to search this array for the GameObject tile of which their are exactly 16.
     private GameObject[] TileGameObjects;
+    // The corresponding rotation in degrees is stored in the same way.
     private float[] TileRotations;
 
     // All prefabs to spawn in to maze.
@@ -30,6 +41,7 @@ public class MazeBuilder : MonoBehaviour
     public GameObject Split;
     public GameObject Forward;
     public GameObject Empty;
+    public GameObject CulDeSac;
     public GameObject End;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -42,13 +54,8 @@ public class MazeBuilder : MonoBehaviour
         TileGameObjects = new GameObject[16];
         TileRotations = new float[16];
 
-        // 0001 returned 8 instead of 1
-        // 1001 correct
-        // 1010 returned 5 instead of 10
-        // 1101 returned 11 instead of 13
+        // DO NOT EDIT THESE NUMBERS.
         // 
-
-        // These values are not random.
         TileGameObjects[0] = Empty;
         TileRotations[0] = 0;
         TileGameObjects[1] = Split;
@@ -63,7 +70,7 @@ public class MazeBuilder : MonoBehaviour
         TileRotations[5] = 0;
         TileGameObjects[6] = Corner;
         TileRotations[6] = 90;
-        TileGameObjects[7] = End;
+        TileGameObjects[7] = CulDeSac;
         TileRotations[7] = 180;
         TileGameObjects[8] = Split;
         TileRotations[8] = 0;
@@ -71,18 +78,16 @@ public class MazeBuilder : MonoBehaviour
         TileRotations[9] = 270;
         TileGameObjects[10] = Forward;
         TileRotations[10] = 90;
-        TileGameObjects[11] = End;
+        TileGameObjects[11] = CulDeSac;
         TileRotations[11] = 270;
         TileGameObjects[12] = Corner;
         TileRotations[12] = 0;
-        TileGameObjects[13] = End;
+        TileGameObjects[13] = CulDeSac;
         TileRotations[13] = 0;
-        TileGameObjects[14] = End;
+        TileGameObjects[14] = CulDeSac;
         TileRotations[14] = 90;
         TileGameObjects[15] = Full;
         TileRotations[15] = 0;
-
-        BuildMaze();
     }
 
     // Update is called once per frame
@@ -114,13 +119,6 @@ public class MazeBuilder : MonoBehaviour
 
         // This is the maze. Each coordinate in the maze has a 4 bit binary as a string representing one of 16 tile types of the maze.
         MazeDictionary MazeAsCoords = TranslateWallsToBinary(MazeWallSpecs);
-
-
-
-        //Debug.Log(MazeAsCoords[new Tuple<int,int> (0,0)]);
-
-        // Problem here: the int[] in MazeAsCoords are unique objects as opposed to being based on/
-        // I can set the hash function actually wait
 
         SpawnInMaze(MazeAsCoords);
     }
@@ -167,16 +165,14 @@ public class MazeBuilder : MonoBehaviour
 
     private void SpawnInMaze(Dictionary<Tuple<int,int>, string> mazeAsCoords)
     {
-        //foreach (KeyValuePair<Tuple<int,int>, string> coord in mazeAsCoords)
-        //{
-            //Debug.Log("All coords, before SpawnInMaze(): " + coord.Key[0] + ":" + coord.Key[1] + ". Binary: " + coord.Value);
-        //}
+        ArrayList CulDuSacs = new ArrayList();
 
         // For each cell in the maze
         for (int row_index = 0; row_index < MazeSize; row_index++)
         {
             for (int col_index = 0; col_index < MazeSize; col_index++)
             {
+
                 // Spawn in a tile corresponding to that cell's wall setup.
                 string binary_ = mazeAsCoords[new Tuple<int,int> (row_index,col_index)];
                 int binAsDecimal = StrBinaryToDecimal(binary_);
@@ -196,8 +192,46 @@ public class MazeBuilder : MonoBehaviour
                 tile.name = "Maze Tile @ " + row_index+":"+col_index;
                 tile.transform.parent = GameObject.Find("Maze").transform;
                 tile.transform.Rotate(0, TileRotations[binAsDecimal], 0);
+                 
+                if (binary_ == "0111" || binary_ == "1011" || binary_ == "1101" || binary_ == "1110")
+                {
+                    // Give this array both the GameObject and it's angle.
+                    CulDuSacs.Add( new Tuple<GameObject,int> (tile, StrBinaryToDecimal(binary_)));
+                }
             }
         }
+
+
+        // On making a start and an end point to the maze.
+        // Collect all the End Of Maze Tiles as we go
+        // At the end, replace one at random with the End of Maze tile
+        // Then choose a sufficiently far tile to be the starting point
+        // Player will spawn into entrance scene, then teleport to the mazes according to which way they go.
+        // Collect keys in mazes, teleport back.
+        // When all three are collected, then go to room at the start to win. Hooray!
+
+        // Randomly select a cul de sac, get its position, delete it, and then replace it with an end tile.
+        System.Random choose_cds = new System.Random();
+        // Get the index at random.
+        int ToReplace = choose_cds.Next(CulDuSacs.Count);
+        // Grab the Tile, angle Tuple from the array.
+        Tuple<GameObject, int> GOandAngle = (Tuple<GameObject,int>) CulDuSacs[ToReplace];
+        // Get the position of the tile.
+        Vector3 EndPosition = GOandAngle.Item1.transform.position;
+        // Destroy the tile.
+        GameObject TileToDestroy = (GameObject) GOandAngle.Item1;
+        GameObject.Destroy( TileToDestroy );
+        // Replace it with a tile for the end of the maze.
+        GameObject EndTile = Instantiate
+        (
+            End,
+            EndPosition,
+            Quaternion.identity
+        );
+        EndTile.transform.Rotate(0, TileRotations[GOandAngle.Item2],0);
+
+
+
     }
 
     private int StrBinaryToDecimal(string bin)
