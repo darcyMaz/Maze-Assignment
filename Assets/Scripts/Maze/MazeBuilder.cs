@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -28,7 +29,10 @@ public class MazeBuilder : MonoBehaviour
     public int MazeNumber;
     public int MazeSize;
     public float TileSize;
+
+    private string MazeName;
     private MazeGenerator MazeGenerator;
+    private Vector3 StartingPoint;
 
     // Where the CoordsToBinary object returns a string which is a 4bit binary, translate that to decimal and use that as an index to search this array for the GameObject tile of which their are exactly 16.
     private GameObject[] TileGameObjects;
@@ -48,6 +52,7 @@ public class MazeBuilder : MonoBehaviour
     void Start()
     {
         MazeGenerator = new MazeGenerator(MazeSize);
+        MazeName = "Maze #" + MazeNumber;
 
         // Assign the tiles objects to the array.
         // Also assign the rotations.
@@ -55,7 +60,8 @@ public class MazeBuilder : MonoBehaviour
         TileRotations = new float[16];
 
         // DO NOT EDIT THESE NUMBERS.
-        // 
+        // There are sixteen possible tiles and orientations for them.
+        // Translate walla to binary looks at the cells of the maze and translate them to 4bit binary number that then get coverted to decimal. That's a bit complex for this lol.
         TileGameObjects[0] = Empty;
         TileRotations[0] = 0;
         TileGameObjects[1] = Split;
@@ -96,9 +102,12 @@ public class MazeBuilder : MonoBehaviour
 
     }
 
-    // I can see that this isn't quite working based on the result.
-    // All walls should be doubled up. But they are not.
-    // Ok yeah it's bevause I did not apply the rotation!
+
+    /**
+     * Guess what this function does.
+     * It generates a maze 
+     * 
+     */
     public void BuildMaze()
     {
         // These are the wall specifications for the generated maze.
@@ -115,7 +124,6 @@ public class MazeBuilder : MonoBehaviour
         // End has four.
         // Full has one.
         // Empty has one.
-        //  Sum: Sixteen possible orientations, lucky, I can use binary.
 
         // This is the maze. Each coordinate in the maze has a 4 bit binary as a string representing one of 16 tile types of the maze.
         MazeDictionary MazeAsCoords = TranslateWallsToBinary(MazeWallSpecs);
@@ -123,12 +131,13 @@ public class MazeBuilder : MonoBehaviour
         SpawnInMaze(MazeAsCoords);
     }
 
-    // Returns a dictionary where the int[] key is the coordinates in the maze and the string is a four digit binary code representing a tile type and orientation.
+    // Returns a dictionary where the Tuple<int,int> key is the coordinates in the maze and the string is a four digit binary code representing the tile type and orientation.
+    //      I.e. Dictionary<(x,y),the walls at this cell>
     private MazeDictionary TranslateWallsToBinary(int[][][] mazeWallSpecs)
     {
         MazeDictionary CoordsToBinary = new MazeDictionary();
 
-        // Go through each index in the maze and figure out what kind of wall it is.
+        // Go through each index in the maze and figure out which walls it has.
         for (int row_index = 0; row_index < MazeSize; row_index++)
         {
             for (int col_index = 0; col_index < MazeSize; col_index++)
@@ -157,8 +166,6 @@ public class MazeBuilder : MonoBehaviour
                 CoordsToBinary.Add(new Tuple<int,int> (row_index, col_index), BinaryToAdd);
             }
         }
-
-
         return CoordsToBinary;
     }
 
@@ -188,7 +195,6 @@ public class MazeBuilder : MonoBehaviour
 
                 Debug.Log(row_index+":"+col_index+" - "+tile.name + " " + TileRotations[binAsDecimal] + " " + binary_);
 
-                // Debug.Log("Remember to change the name of Maze to Maze1, Maze2, Maze3");
                 tile.name = "Maze Tile @ " + row_index+":"+col_index;
                 tile.transform.parent = GameObject.Find("Maze").transform;
                 tile.transform.Rotate(0, TileRotations[binAsDecimal], 0);
@@ -202,13 +208,9 @@ public class MazeBuilder : MonoBehaviour
         }
 
 
-        // On making a start and an end point to the maze.
-        // Collect all the End Of Maze Tiles as we go
-        // At the end, replace one at random with the End of Maze tile
-        // Then choose a sufficiently far tile to be the starting point
-        // Player will spawn into entrance scene, then teleport to the mazes according to which way they go.
-        // Collect keys in mazes, teleport back.
-        // When all three are collected, then go to room at the start to win. Hooray!
+        // Finally, this bit does TWO things.
+        // 1) It replaces a random cul de sac tile with an end of maze tile.
+        // 2) Grabs a random coordinate for the spawn point, makes sure it is of sufficient distance from the end.
 
         // Randomly select a cul de sac, get its position, delete it, and then replace it with an end tile.
         System.Random choose_cds = new System.Random();
@@ -230,7 +232,21 @@ public class MazeBuilder : MonoBehaviour
         );
         EndTile.transform.Rotate(0, TileRotations[GOandAngle.Item2],0);
 
-
+        // This randomly chooses a starting point larger than half the MazeSize away from the end as the crow flies.
+        for (int while_i = 0; while_i < 4*Mathf.Pow(MazeSize, MazeSize) ; while_i++)
+        {
+            // Grab a random coordinate.
+            int rand_x = choose_cds.Next(MazeSize);
+            int rand_z = choose_cds.Next(MazeSize);
+            // Calc distance between it and end.
+            float distance = Mathf.Sqrt( Mathf.Pow(EndTile.transform.position.x - rand_x,2) + Mathf.Pow(EndTile.transform.position.z - rand_z, 2));
+            // If it is larger than or equal to half the crow fly distance then keep it and break.
+            if (distance >= MazeSize/2)
+            {
+                StartingPoint = new Vector3(rand_x,0, rand_z);
+                break;
+            }
+        }
 
     }
 
@@ -251,6 +267,11 @@ public class MazeBuilder : MonoBehaviour
         return decimalReturn;
     }
 
+    public Vector3 GetStartingPoint()
+    {
+        if (StartingPoint == null) throw new Exception("Access to the starting point of Maze #" + MazeNumber + " was attempted but the maze hasn't been generated yet.");
+        return StartingPoint;
+    }
 
     private class MazeDictionary : Dictionary<Tuple<int, int>, string>
     {
