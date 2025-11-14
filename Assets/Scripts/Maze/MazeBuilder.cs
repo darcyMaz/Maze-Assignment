@@ -13,7 +13,7 @@ using UnityEngine.InputSystem;
 //      Bring this into main scene
 //      Make main scene
 //      Give GameManager control of three mazes, each with a unique number and sizes.
-//      Randomly choose a starting point as well.
+//      Randomly choose a starting point as well. X
 //      Press to open doors for maze access. Then they teleport you over.
 // Future steps
 //      Timer, slowly lose health
