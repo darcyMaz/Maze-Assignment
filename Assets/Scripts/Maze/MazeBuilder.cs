@@ -30,6 +30,8 @@ public class MazeBuilder : MonoBehaviour
     public int MazeSize;
     public float TileSize;
 
+    private Vector3 ParentPosition;
+
     private string MazeName;
     private MazeGenerator MazeGenerator;
     private Vector3 StartingPoint;
@@ -48,11 +50,12 @@ public class MazeBuilder : MonoBehaviour
     public GameObject CulDeSac;
     public GameObject End;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void Awake()
     {
         MazeGenerator = new MazeGenerator(MazeSize);
         MazeName = "Maze #" + MazeNumber;
+
+        ParentPosition = GetComponentInParent<Transform>().position;
 
         // Assign the tiles objects to the array.
         // Also assign the rotations.
@@ -95,7 +98,12 @@ public class MazeBuilder : MonoBehaviour
         TileGameObjects[15] = Full;
         TileRotations[15] = 0;
 
-        BuildMaze();
+        // BuildMaze();
+    }
+
+    private void Start()
+    {
+        
     }
 
     // Update is called once per frame
@@ -176,6 +184,8 @@ public class MazeBuilder : MonoBehaviour
     {
         ArrayList CulDuSacs = new ArrayList();
 
+        Debug.Log(MazeName + " " + ParentPosition);
+
         // For each cell in the maze
         for (int row_index = 0; row_index < MazeSize; row_index++)
         {
@@ -191,14 +201,14 @@ public class MazeBuilder : MonoBehaviour
                 GameObject tile = Instantiate
                 (
                     CurrentTile, 
-                    new Vector3(  (row_index ) * TileSize,   0, (col_index) * TileSize), 
+                    (new Vector3(  (row_index ) * TileSize,   0, (col_index) * TileSize)) + ParentPosition, 
                     Quaternion.identity
                 );
 
-                Debug.Log(row_index+":"+col_index+" - "+tile.name + " " + TileRotations[binAsDecimal] + " " + binary_);
+                // Debug.Log(row_index+":"+col_index+" - "+tile.name + " " + TileRotations[binAsDecimal] + " " + binary_);
 
                 tile.name = "Maze Tile @ " + row_index+":"+col_index;
-                tile.transform.parent = GameObject.Find("Maze").transform;
+                tile.transform.parent = GameObject.Find("Maze " + MazeNumber).transform;
                 tile.transform.Rotate(0, TileRotations[binAsDecimal], 0);
                  
                 if (binary_ == "0111" || binary_ == "1011" || binary_ == "1101" || binary_ == "1110")
@@ -250,7 +260,7 @@ public class MazeBuilder : MonoBehaviour
             }
         }
 
-        Debug.Log(StartingPoint);
+        // Debug.Log(StartingPoint);
 
     }
 

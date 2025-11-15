@@ -29,9 +29,13 @@ public class DeathZone : MonoBehaviour
 
             if (player == null) { Debug.Log("A DeathZone tried to kill a player but grabbed a null component instead of a Player component."); return; }
 
+            /*
             player.TakeDamage(1);
             if (player.GetHealth() > 0) player.ResetPosition();
             // Otherwise, GameManager will see that the player has health below zero and end the game.
+            */
+
+            // Reset the player to the starting position.
 
         }
     }
